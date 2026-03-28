@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>거상 To-Do List</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>거상 To-Do List</h1>
+    <p class="reset-info" id="resetInfo"></p>
+  </header>
+  <main id="app">
+    <section class="card" data-section="daily">
+      <h2>일일 퀘스트</h2>
+      <ul class="quest-list" id="daily-list"></ul>
+      <div class="add-form">
+        <input type="text" id="daily-input" placeholder="퀘스트 추가..." maxlength="50">
+        <button class="btn-add" data-section="daily">+</button>
+      </div>
+    </section>
+
+    <section class="card" data-section="weekly">
+      <h2>주간 퀘스트</h2>
+      <ul class="quest-list" id="weekly-list"></ul>
+      <div class="add-form">
+        <input type="text" id="weekly-input" placeholder="퀘스트 추가..." maxlength="50">
+        <button class="btn-add" data-section="weekly">+</button>
+      </div>
+    </section>
+
+    <section class="card" data-section="dailyRepeat">
+      <h2>일일 반복</h2>
+      <ul class="quest-list" id="dailyRepeat-list"></ul>
+      <div class="add-form">
+        <input type="text" id="dailyRepeat-input" placeholder="퀘스트 추가..." maxlength="50">
+        <button class="btn-add" data-section="dailyRepeat">+</button>
+      </div>
+    </section>
+
+    <section class="card" data-section="event">
+      <h2>이벤트</h2>
+      <ul class="quest-list" id="event-list"></ul>
+      <div class="add-form">
+        <input type="text" id="event-input" placeholder="퀘스트 추가..." maxlength="50">
+        <button class="btn-add" data-section="event">+</button>
+      </div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

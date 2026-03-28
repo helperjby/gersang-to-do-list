@@ -1,0 +1,157 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+  padding: 16px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+header h1 {
+  font-size: 1.6rem;
+  color: #e8b04a;
+  margin-bottom: 4px;
+}
+
+.reset-info {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+main {
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: #16213e;
+  border: 1px solid #2a2a4a;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.card h2 {
+  font-size: 1.1rem;
+  color: #e8b04a;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #2a2a4a;
+}
+
+.quest-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quest-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: #1a1a3e;
+  border-radius: 6px;
+  transition: opacity 0.2s;
+}
+
+.quest-item.done {
+  opacity: 0.5;
+}
+
+.quest-item.done .quest-name {
+  text-decoration: line-through;
+  color: #666;
+}
+
+.quest-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: #e8b04a;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.quest-name {
+  flex: 1;
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+
+.btn-delete {
+  background: none;
+  border: none;
+  color: #e05555;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.btn-delete:hover {
+  opacity: 1;
+}
+
+.add-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.add-form input {
+  flex: 1;
+  padding: 8px 12px;
+  background: #1a1a3e;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.add-form input:focus {
+  border-color: #e8b04a;
+}
+
+.add-form input::placeholder {
+  color: #555;
+}
+
+.btn-add {
+  width: 36px;
+  height: 36px;
+  background: #e8b04a;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.3rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-add:hover {
+  background: #f0c060;
+}
+
+.empty-msg {
+  text-align: center;
+  color: #555;
+  font-size: 0.85rem;
+  padding: 8px 0;
+}
