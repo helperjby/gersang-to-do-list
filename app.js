@@ -116,14 +116,6 @@
     return changed;
   }
 
-  // --- Sort: done items to bottom ---
-
-  function sortDoneToBottom(arr) {
-    const notDone = arr.filter(q => !q.done);
-    const done = arr.filter(q => q.done);
-    return [...notDone, ...done];
-  }
-
   // --- Rendering ---
 
   function render(data) {
@@ -182,7 +174,6 @@
         cb.checked = quest.done;
         cb.addEventListener('change', () => {
           quest.done = cb.checked;
-          data[section] = sortDoneToBottom(data[section]);
           saveData(data);
           render(data);
         });
@@ -404,7 +395,6 @@
     if (!name) return;
 
     data[section].push({ id: generateId(), name, done: false });
-    data[section] = sortDoneToBottom(data[section]);
     saveData(data);
     render(data);
     input.value = '';
@@ -454,9 +444,6 @@
 
   function init() {
     data = loadData();
-    SECTIONS.forEach(s => {
-      data[s] = sortDoneToBottom(data[s]);
-    });
     if (checkAndReset(data)) {
       saveData(data);
     }
