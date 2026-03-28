@@ -146,6 +146,10 @@ main {
   cursor: grabbing;
 }
 
+.quest-item[draggable="true"] > *:not(.drag-handle) {
+  pointer-events: none;
+}
+
 .quest-item.dragging {
   opacity: 0.4;
   background: #2a2a5a;

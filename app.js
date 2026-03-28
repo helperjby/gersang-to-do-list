@@ -237,6 +237,7 @@
     dragState.fromIndex = parseInt(li.dataset.index);
     li.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
   }
 
   function onDragOver(e) {
@@ -245,25 +246,30 @@
   }
 
   function onDragEnter(e) {
+    e.preventDefault();
     const li = e.currentTarget;
-    if (li.dataset.section === dragState.section) {
+    if (li.dataset.section === dragState.section && !li.classList.contains('dragging')) {
       li.classList.add('drag-over');
     }
   }
 
   function onDragLeave(e) {
-    e.currentTarget.classList.remove('drag-over');
+    const li = e.currentTarget;
+    if (!li.contains(e.relatedTarget)) {
+      li.classList.remove('drag-over');
+    }
   }
 
   function onDrop(e) {
     e.preventDefault();
+    e.stopPropagation();
     const li = e.currentTarget;
     li.classList.remove('drag-over');
 
     const toSection = li.dataset.section;
     const toIndex = parseInt(li.dataset.index);
 
-    if (toSection !== dragState.section) return;
+    if (toSection !== dragState.section || toIndex === dragState.fromIndex) return;
 
     const arr = data[dragState.section];
     const [moved] = arr.splice(dragState.fromIndex, 1);
