@@ -2,8 +2,15 @@
   const STORAGE_KEY = 'gersang-todo';
   const SECTIONS = ['todo', 'daily', 'weekly', 'event'];
 
+  const DEFAULT_DUNGEONS = [
+    '고수동굴', '대관령', '한라산', '월기봉', '거제해저동굴',
+    '무령왕릉', '천년호', '이시즈치산', '하치만타이온천', '대설산',
+    '일본해저동굴', '귀곡성', '대둔산', '대만해저동굴', '해적동굴',
+    '해적동굴2층(200렙 이하)', '유명계', '륭산', '샤오링의후원', '챠우신전',
+  ];
+
   // --- State ---
-  let reorderMode = {}; // { sectionName: true/false }
+  let reorderMode = {};
 
   // --- Data ---
 
@@ -19,7 +26,6 @@
   }
 
   function migrateData(data) {
-    // Migrate dailyRepeat → todo
     if (data.dailyRepeat && !data.todo) {
       data.todo = data.dailyRepeat;
       delete data.dailyRepeat;
@@ -30,7 +36,16 @@
     if (!data.event) data.event = [];
     if (!data.lastDailyReset) data.lastDailyReset = null;
     if (!data.lastWeeklyReset) data.lastWeeklyReset = null;
+    // Dungeon migration
+    if (!data.dungeon) {
+      data.dungeon = getDefaultDungeons();
+    }
+    if (data.showDungeon === undefined) data.showDungeon = false;
     return data;
+  }
+
+  function getDefaultDungeons() {
+    return DEFAULT_DUNGEONS.map(name => ({ name, done: false, hidden: false }));
   }
 
   function getDefaultData() {
@@ -39,6 +54,8 @@
       daily: [],
       weekly: [],
       event: [],
+      dungeon: getDefaultDungeons(),
+      showDungeon: false,
       lastDailyReset: null,
       lastWeeklyReset: null,
     };
@@ -78,16 +95,16 @@
     const now = new Date();
     let changed = false;
 
-    // Daily reset (daily only — todo has no reset)
     const latestDaily = getLatestDaily06(now);
     const lastDaily = data.lastDailyReset ? new Date(data.lastDailyReset) : null;
     if (!lastDaily || lastDaily < latestDaily) {
       data.daily.forEach(q => q.done = false);
+      // Dungeon daily reset: clear done only, keep hidden
+      data.dungeon.forEach(d => d.done = false);
       data.lastDailyReset = latestDaily.toISOString();
       changed = true;
     }
 
-    // Weekly reset (weekly)
     const latestWeekly = getLatestSunday06(now);
     const lastWeekly = data.lastWeeklyReset ? new Date(data.lastWeeklyReset) : null;
     if (!lastWeekly || lastWeekly < latestWeekly) {
@@ -118,7 +135,6 @@
       const total = quests.length;
       const doneCount = quests.filter(q => q.done).length;
 
-      // Progress
       const countEl = document.getElementById(`${section}-count`);
       const progressWrap = document.getElementById(`${section}-progress`);
       if (total > 0) {
@@ -147,7 +163,6 @@
         li.dataset.index = idx;
         li.dataset.section = section;
 
-        // Drag handle (visible only in reorder mode)
         if (isReordering) {
           li.draggable = true;
           const handle = document.createElement('span');
@@ -178,7 +193,6 @@
         name.className = 'quest-name';
         name.textContent = quest.name;
 
-        // Inline edit on double-click
         name.addEventListener('dblclick', () => {
           const input = document.createElement('input');
           input.type = 'text';
@@ -224,7 +238,83 @@
       });
     });
 
+    renderDungeon(data);
     updateResetInfo(data);
+  }
+
+  // --- Dungeon Rendering ---
+
+  function renderDungeon(data) {
+    const panel = document.getElementById('dungeonPanel');
+    const toggleBtn = document.getElementById('dungeonToggle');
+
+    if (data.showDungeon) {
+      panel.classList.add('visible');
+      toggleBtn.classList.add('active');
+    } else {
+      panel.classList.remove('visible');
+      toggleBtn.classList.remove('active');
+    }
+
+    const list = document.getElementById('dungeon-list');
+    list.innerHTML = '';
+
+    const visible = data.dungeon.filter(d => !d.hidden);
+    const total = visible.length;
+    const doneCount = visible.filter(d => d.done).length;
+
+    const countEl = document.getElementById('dungeon-count');
+    const progressWrap = document.getElementById('dungeon-progress');
+    if (total > 0) {
+      countEl.textContent = `${doneCount}/${total}`;
+      progressWrap.style.display = 'block';
+      const fill = progressWrap.querySelector('.progress-bar-fill');
+      fill.style.width = `${(doneCount / total) * 100}%`;
+    } else {
+      countEl.textContent = '';
+      progressWrap.style.display = 'none';
+    }
+
+    if (total === 0) {
+      const li = document.createElement('li');
+      li.className = 'empty-msg';
+      li.textContent = '모든 던전이 제거되었습니다';
+      list.appendChild(li);
+      return;
+    }
+
+    visible.forEach(dungeon => {
+      const li = document.createElement('li');
+      li.className = 'dungeon-item' + (dungeon.done ? ' done' : '');
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'quest-checkbox';
+      cb.checked = dungeon.done;
+      cb.addEventListener('change', () => {
+        dungeon.done = cb.checked;
+        saveData(data);
+        renderDungeon(data);
+      });
+
+      const name = document.createElement('span');
+      name.className = 'dungeon-name';
+      name.textContent = dungeon.name;
+
+      const del = document.createElement('button');
+      del.className = 'btn-dungeon-delete';
+      del.textContent = '✕';
+      del.title = '제거';
+      del.addEventListener('click', () => {
+        dungeon.hidden = true;
+        dungeon.done = false;
+        saveData(data);
+        renderDungeon(data);
+      });
+
+      li.append(cb, name, del);
+      list.appendChild(li);
+    });
   }
 
   // --- Drag and Drop ---
@@ -334,7 +424,6 @@
       });
     });
 
-    // Reorder toggle buttons
     document.querySelectorAll('.btn-reorder').forEach(btn => {
       const section = btn.dataset.section;
       btn.addEventListener('click', () => {
@@ -342,6 +431,20 @@
         btn.classList.toggle('active', reorderMode[section]);
         render(data);
       });
+    });
+
+    // Dungeon toggle
+    document.getElementById('dungeonToggle').addEventListener('click', () => {
+      data.showDungeon = !data.showDungeon;
+      saveData(data);
+      renderDungeon(data);
+    });
+
+    // Dungeon reset
+    document.getElementById('dungeonReset').addEventListener('click', () => {
+      data.dungeon = getDefaultDungeons();
+      saveData(data);
+      renderDungeon(data);
     });
   }
 
@@ -351,7 +454,6 @@
 
   function init() {
     data = loadData();
-    // Sort done to bottom on load
     SECTIONS.forEach(s => {
       data[s] = sortDoneToBottom(data[s]);
     });

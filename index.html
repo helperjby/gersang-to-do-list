@@ -9,66 +9,98 @@
 </head>
 <body>
   <header>
-    <h1>거상 To-Do List</h1>
-    <p class="reset-info" id="resetInfo"></p>
+    <div class="header-inner">
+      <div class="header-left"></div>
+      <div class="header-center">
+        <h1>거상 To-Do List</h1>
+        <p class="reset-info" id="resetInfo"></p>
+      </div>
+      <div class="header-right">
+        <button class="btn-dungeon-toggle" id="dungeonToggle" title="던전 공고">
+          <span class="btn-dungeon-icon">⚔</span>
+          <span class="btn-dungeon-label">던전 공고</span>
+        </button>
+      </div>
+    </div>
   </header>
-  <main id="app">
-    <section class="card" data-section="todo">
-      <div class="card-header">
-        <h2>해야 할 일</h2>
-        <span class="quest-count" id="todo-count"></span>
-        <button class="btn-reorder" data-section="todo" title="순서변경">⇅</button>
-      </div>
-      <div class="progress-bar-wrap" id="todo-progress"><div class="progress-bar-fill"></div></div>
-      <ul class="quest-list" id="todo-list"></ul>
-      <div class="add-form">
-        <input type="text" id="todo-input" placeholder="할 일 추가..." maxlength="50">
-        <button class="btn-add" data-section="todo">+</button>
-      </div>
-    </section>
 
-    <section class="card" data-section="daily">
-      <div class="card-header">
-        <h2>일일 퀘스트</h2>
-        <span class="quest-count" id="daily-count"></span>
-        <button class="btn-reorder" data-section="daily" title="순서변경">⇅</button>
-      </div>
-      <div class="progress-bar-wrap" id="daily-progress"><div class="progress-bar-fill"></div></div>
-      <ul class="quest-list" id="daily-list"></ul>
-      <div class="add-form">
-        <input type="text" id="daily-input" placeholder="퀘스트 추가..." maxlength="50">
-        <button class="btn-add" data-section="daily">+</button>
-      </div>
-    </section>
+  <div class="layout-wrap">
+    <main id="app">
+      <section class="card" data-section="todo">
+        <div class="card-header">
+          <h2>해야 할 일</h2>
+          <span class="quest-count" id="todo-count"></span>
+          <button class="btn-reorder" data-section="todo" title="순서변경">⇅</button>
+        </div>
+        <div class="progress-bar-wrap" id="todo-progress"><div class="progress-bar-fill"></div></div>
+        <ul class="quest-list" id="todo-list"></ul>
+        <div class="add-form">
+          <input type="text" id="todo-input" placeholder="할 일 추가..." maxlength="50">
+          <button class="btn-add" data-section="todo">+</button>
+        </div>
+      </section>
 
-    <section class="card" data-section="weekly">
-      <div class="card-header">
-        <h2>주간 퀘스트</h2>
-        <span class="quest-count" id="weekly-count"></span>
-        <button class="btn-reorder" data-section="weekly" title="순서변경">⇅</button>
-      </div>
-      <div class="progress-bar-wrap" id="weekly-progress"><div class="progress-bar-fill"></div></div>
-      <ul class="quest-list" id="weekly-list"></ul>
-      <div class="add-form">
-        <input type="text" id="weekly-input" placeholder="퀘스트 추가..." maxlength="50">
-        <button class="btn-add" data-section="weekly">+</button>
-      </div>
-    </section>
+      <section class="card" data-section="daily">
+        <div class="card-header">
+          <h2>일일 퀘스트</h2>
+          <span class="quest-count" id="daily-count"></span>
+          <button class="btn-reorder" data-section="daily" title="순서변경">⇅</button>
+        </div>
+        <div class="progress-bar-wrap" id="daily-progress"><div class="progress-bar-fill"></div></div>
+        <ul class="quest-list" id="daily-list"></ul>
+        <div class="add-form">
+          <input type="text" id="daily-input" placeholder="퀘스트 추가..." maxlength="50">
+          <button class="btn-add" data-section="daily">+</button>
+        </div>
+      </section>
 
-    <section class="card" data-section="event">
-      <div class="card-header">
-        <h2>이벤트</h2>
-        <span class="quest-count" id="event-count"></span>
-        <button class="btn-reorder" data-section="event" title="순서변경">⇅</button>
+      <section class="card" data-section="weekly">
+        <div class="card-header">
+          <h2>주간 퀘스트</h2>
+          <span class="quest-count" id="weekly-count"></span>
+          <button class="btn-reorder" data-section="weekly" title="순서변경">⇅</button>
+        </div>
+        <div class="progress-bar-wrap" id="weekly-progress"><div class="progress-bar-fill"></div></div>
+        <ul class="quest-list" id="weekly-list"></ul>
+        <div class="add-form">
+          <input type="text" id="weekly-input" placeholder="퀘스트 추가..." maxlength="50">
+          <button class="btn-add" data-section="weekly">+</button>
+        </div>
+      </section>
+
+      <section class="card" data-section="event">
+        <div class="card-header">
+          <h2>이벤트</h2>
+          <span class="quest-count" id="event-count"></span>
+          <button class="btn-reorder" data-section="event" title="순서변경">⇅</button>
+        </div>
+        <div class="progress-bar-wrap" id="event-progress"><div class="progress-bar-fill"></div></div>
+        <ul class="quest-list" id="event-list"></ul>
+        <div class="add-form">
+          <input type="text" id="event-input" placeholder="퀘스트 추가..." maxlength="50">
+          <button class="btn-add" data-section="event">+</button>
+        </div>
+      </section>
+    </main>
+
+    <aside class="dungeon-panel" id="dungeonPanel">
+      <div class="dungeon-card">
+        <div class="dungeon-header">
+          <div class="dungeon-title-row">
+            <span class="dungeon-emblem">⚔</span>
+            <h2>던전 공고 <small>(반복)</small></h2>
+          </div>
+          <div class="dungeon-meta">
+            <span class="quest-count" id="dungeon-count"></span>
+            <button class="btn-dungeon-reset" id="dungeonReset" title="전체 초기화">↻ 리셋</button>
+          </div>
+        </div>
+        <div class="progress-bar-wrap" id="dungeon-progress"><div class="progress-bar-fill"></div></div>
+        <ul class="dungeon-list" id="dungeon-list"></ul>
       </div>
-      <div class="progress-bar-wrap" id="event-progress"><div class="progress-bar-fill"></div></div>
-      <ul class="quest-list" id="event-list"></ul>
-      <div class="add-form">
-        <input type="text" id="event-input" placeholder="퀘스트 추가..." maxlength="50">
-        <button class="btn-add" data-section="event">+</button>
-      </div>
-    </section>
-  </main>
+    </aside>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
