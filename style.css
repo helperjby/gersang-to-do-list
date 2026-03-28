@@ -428,21 +428,6 @@ main {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 600px;
-  overflow-y: auto;
-}
-
-.dungeon-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.dungeon-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.dungeon-list::-webkit-scrollbar-thumb {
-  background: #2a2a4a;
-  border-radius: 2px;
 }
 
 .dungeon-item {
