@@ -164,18 +164,16 @@
         li.dataset.section = section;
 
         if (isReordering) {
-          li.draggable = true;
+          li.classList.add('reorder-mode');
           const handle = document.createElement('span');
           handle.className = 'drag-handle';
           handle.textContent = '☰';
           li.appendChild(handle);
 
-          li.addEventListener('dragstart', onDragStart);
-          li.addEventListener('dragover', onDragOver);
-          li.addEventListener('dragenter', onDragEnter);
-          li.addEventListener('dragleave', onDragLeave);
-          li.addEventListener('drop', onDrop);
-          li.addEventListener('dragend', onDragEnd);
+          handle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            startDrag(li, section, idx, e.clientY);
+          });
         }
 
         const cb = document.createElement('input');
@@ -317,60 +315,62 @@
     });
   }
 
-  // --- Drag and Drop ---
+  // --- Drag and Drop (mouse events) ---
 
-  let dragState = { section: null, fromIndex: null };
+  let dragState = { active: false, section: null, fromIndex: null, el: null };
 
-  function onDragStart(e) {
-    const li = e.currentTarget;
-    dragState.section = li.dataset.section;
-    dragState.fromIndex = parseInt(li.dataset.index);
+  function startDrag(li, section, index, startY) {
+    dragState = { active: true, section, fromIndex: index, el: li };
     li.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', '');
-  }
+    document.body.style.userSelect = 'none';
 
-  function onDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  }
+    function onMouseMove(e) {
+      if (!dragState.active) return;
+      // 같은 섹션의 li 목록에서 마우스 위치에 해당하는 대상 찾기
+      const list = li.closest('.quest-list');
+      const items = [...list.querySelectorAll('.quest-item')];
+      items.forEach(item => item.classList.remove('drag-over'));
 
-  function onDragEnter(e) {
-    e.preventDefault();
-    const li = e.currentTarget;
-    if (li.dataset.section === dragState.section && !li.classList.contains('dragging')) {
-      li.classList.add('drag-over');
+      for (const item of items) {
+        if (item === dragState.el) continue;
+        const rect = item.getBoundingClientRect();
+        if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+          item.classList.add('drag-over');
+          break;
+        }
+      }
     }
-  }
 
-  function onDragLeave(e) {
-    const li = e.currentTarget;
-    if (!li.contains(e.relatedTarget)) {
-      li.classList.remove('drag-over');
+    function onMouseUp(e) {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.userSelect = '';
+
+      if (!dragState.active) return;
+
+      const list = li.closest('.quest-list');
+      const items = [...list.querySelectorAll('.quest-item')];
+      const target = items.find(item => item.classList.contains('drag-over'));
+
+      items.forEach(item => item.classList.remove('drag-over'));
+      dragState.el.classList.remove('dragging');
+
+      if (target) {
+        const toIndex = parseInt(target.dataset.index);
+        if (toIndex !== dragState.fromIndex) {
+          const arr = data[dragState.section];
+          const [moved] = arr.splice(dragState.fromIndex, 1);
+          arr.splice(toIndex, 0, moved);
+          saveData(data);
+          render(data);
+        }
+      }
+
+      dragState = { active: false, section: null, fromIndex: null, el: null };
     }
-  }
 
-  function onDrop(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    const li = e.currentTarget;
-    li.classList.remove('drag-over');
-
-    const toSection = li.dataset.section;
-    const toIndex = parseInt(li.dataset.index);
-
-    if (toSection !== dragState.section || toIndex === dragState.fromIndex) return;
-
-    const arr = data[dragState.section];
-    const [moved] = arr.splice(dragState.fromIndex, 1);
-    arr.splice(toIndex, 0, moved);
-    saveData(data);
-    render(data);
-  }
-
-  function onDragEnd(e) {
-    e.currentTarget.classList.remove('dragging');
-    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   }
 
   // --- Reset Info ---
