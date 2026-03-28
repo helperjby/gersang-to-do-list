@@ -12,8 +12,27 @@
     <p class="reset-info" id="resetInfo"></p>
   </header>
   <main id="app">
+    <section class="card" data-section="todo">
+      <div class="card-header">
+        <h2>해야 할 일</h2>
+        <span class="quest-count" id="todo-count"></span>
+        <button class="btn-reorder" data-section="todo" title="순서변경">⇅</button>
+      </div>
+      <div class="progress-bar-wrap" id="todo-progress"><div class="progress-bar-fill"></div></div>
+      <ul class="quest-list" id="todo-list"></ul>
+      <div class="add-form">
+        <input type="text" id="todo-input" placeholder="할 일 추가..." maxlength="50">
+        <button class="btn-add" data-section="todo">+</button>
+      </div>
+    </section>
+
     <section class="card" data-section="daily">
-      <h2>일일 퀘스트</h2>
+      <div class="card-header">
+        <h2>일일 퀘스트</h2>
+        <span class="quest-count" id="daily-count"></span>
+        <button class="btn-reorder" data-section="daily" title="순서변경">⇅</button>
+      </div>
+      <div class="progress-bar-wrap" id="daily-progress"><div class="progress-bar-fill"></div></div>
       <ul class="quest-list" id="daily-list"></ul>
       <div class="add-form">
         <input type="text" id="daily-input" placeholder="퀘스트 추가..." maxlength="50">
@@ -22,7 +41,12 @@
     </section>
 
     <section class="card" data-section="weekly">
-      <h2>주간 퀘스트</h2>
+      <div class="card-header">
+        <h2>주간 퀘스트</h2>
+        <span class="quest-count" id="weekly-count"></span>
+        <button class="btn-reorder" data-section="weekly" title="순서변경">⇅</button>
+      </div>
+      <div class="progress-bar-wrap" id="weekly-progress"><div class="progress-bar-fill"></div></div>
       <ul class="quest-list" id="weekly-list"></ul>
       <div class="add-form">
         <input type="text" id="weekly-input" placeholder="퀘스트 추가..." maxlength="50">
@@ -30,17 +54,13 @@
       </div>
     </section>
 
-    <section class="card" data-section="dailyRepeat">
-      <h2>일일 반복</h2>
-      <ul class="quest-list" id="dailyRepeat-list"></ul>
-      <div class="add-form">
-        <input type="text" id="dailyRepeat-input" placeholder="퀘스트 추가..." maxlength="50">
-        <button class="btn-add" data-section="dailyRepeat">+</button>
-      </div>
-    </section>
-
     <section class="card" data-section="event">
-      <h2>이벤트</h2>
+      <div class="card-header">
+        <h2>이벤트</h2>
+        <span class="quest-count" id="event-count"></span>
+        <button class="btn-reorder" data-section="event" title="순서변경">⇅</button>
+      </div>
+      <div class="progress-bar-wrap" id="event-progress"><div class="progress-bar-fill"></div></div>
       <ul class="quest-list" id="event-list"></ul>
       <div class="add-form">
         <input type="text" id="event-input" placeholder="퀘스트 추가..." maxlength="50">
