@@ -336,21 +336,28 @@ main {
 }
 
 .quest-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
   background: var(--bg-item);
   border-radius: var(--radius-sm);
   border-left: 3px solid transparent;
   transition: opacity 0.2s, background 0.15s, border-color 0.15s;
 }
 
+.quest-item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+}
+
 /* Category-specific hover border */
-.card[data-section="todo"] .quest-item:hover { border-left-color: var(--accent-gold); }
-.card[data-section="daily"] .quest-item:hover { border-left-color: var(--accent-cyan); }
-.card[data-section="weekly"] .quest-item:hover { border-left-color: var(--accent-purple); }
-.card[data-section="event"] .quest-item:hover { border-left-color: var(--accent-green); }
+.card[data-section="todo"] > .quest-list > .quest-item:hover,
+.card[data-section="todo"] .quest-children > .quest-item:hover { border-left-color: var(--accent-gold); }
+.card[data-section="daily"] > .quest-list > .quest-item:hover,
+.card[data-section="daily"] .quest-children > .quest-item:hover { border-left-color: var(--accent-cyan); }
+.card[data-section="weekly"] > .quest-list > .quest-item:hover,
+.card[data-section="weekly"] .quest-children > .quest-item:hover { border-left-color: var(--accent-purple); }
+.card[data-section="event"] > .quest-list > .quest-item:hover,
+.card[data-section="event"] .quest-children > .quest-item:hover { border-left-color: var(--accent-green); }
 .card[data-section="dungeon"] .quest-item:hover { border-left-color: var(--accent-gold); }
 
 .quest-item:hover {
@@ -361,9 +368,112 @@ main {
   opacity: 0.45;
 }
 
-.quest-item.done .quest-name {
+.quest-item.done > .quest-item-row .quest-name {
   text-decoration: line-through;
   color: #666;
+}
+
+/* ===== Toggle & Children ===== */
+
+.btn-toggle {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.2s, transform 0.2s;
+  padding: 0;
+}
+
+.btn-toggle:hover {
+  color: var(--text-primary);
+}
+
+.btn-toggle.expanded {
+  transform: rotate(90deg);
+}
+
+.toggle-spacer {
+  width: 18px;
+  flex-shrink: 0;
+}
+
+.quest-children {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0 4px 28px;
+}
+
+.btn-add-child {
+  background: none;
+  border: none;
+  color: var(--accent-gold-dim);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.quest-item-row:hover .btn-add-child {
+  opacity: 0.6;
+}
+
+.btn-add-child:hover {
+  opacity: 1 !important;
+  color: var(--accent-gold);
+}
+
+.sub-add-form {
+  display: flex;
+  gap: 6px;
+  padding: 4px 6px;
+}
+
+.sub-add-form input {
+  flex: 1;
+  padding: 5px 8px;
+  background: var(--bg-item);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.sub-add-form input:focus {
+  border-color: var(--accent-gold);
+}
+
+.sub-add-form input::placeholder {
+  color: var(--text-muted);
+}
+
+.sub-add-form button {
+  width: 28px;
+  height: 28px;
+  background: var(--accent-gold);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sub-add-form button:hover {
+  background: var(--accent-gold-light);
 }
 
 /* ===== Custom Checkbox ===== */
@@ -462,7 +572,7 @@ main {
   transition: opacity 0.2s;
 }
 
-.quest-item:hover .btn-delete {
+.quest-item-row:hover .btn-delete {
   opacity: 0.6;
 }
 

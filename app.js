@@ -11,6 +11,7 @@
 
   // --- State ---
   let reorderMode = {};
+  let openSubAddForms = new Set(); // Track quest IDs with open sub-add forms
 
   // --- Data ---
 
@@ -23,6 +24,15 @@
       } catch { /* fall through */ }
     }
     return getDefaultData();
+  }
+
+  function normalizeQuests(quests) {
+    if (!Array.isArray(quests)) return [];
+    return quests.map(q => ({
+      ...q,
+      children: q.children ? normalizeQuests(q.children) : [],
+      collapsed: q.collapsed || false,
+    }));
   }
 
   function migrateData(data) {
@@ -39,6 +49,10 @@
     if (!data.dungeon) {
       data.dungeon = getDefaultDungeons();
     }
+
+    // Normalize quest items to include children/collapsed
+    SECTIONS.forEach(s => { data[s] = normalizeQuests(data[s]); });
+
     return data;
   }
 
@@ -64,6 +78,42 @@
 
   function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  // --- Recursive Utility Functions ---
+
+  function countQuests(quests) {
+    let total = 0, done = 0;
+    for (const q of quests) {
+      total++;
+      if (q.done) done++;
+      if (q.children && q.children.length > 0) {
+        const sub = countQuests(q.children);
+        total += sub.total;
+        done += sub.done;
+      }
+    }
+    return { total, done };
+  }
+
+  function resetQuests(quests) {
+    quests.forEach(q => {
+      q.done = false;
+      if (q.children && q.children.length > 0) resetQuests(q.children);
+    });
+  }
+
+  function removeQuestById(quests, id) {
+    for (let i = 0; i < quests.length; i++) {
+      if (quests[i].id === id) {
+        quests.splice(i, 1);
+        return true;
+      }
+      if (quests[i].children && removeQuestById(quests[i].children, id)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // --- Reset Logic ---
@@ -95,7 +145,7 @@
     const latestDaily = getLatestDaily06(now);
     const lastDaily = data.lastDailyReset ? new Date(data.lastDailyReset) : null;
     if (!lastDaily || lastDaily < latestDaily) {
-      data.daily.forEach(q => q.done = false);
+      resetQuests(data.daily);
       data.dungeon.forEach(d => d.done = false);
       data.lastDailyReset = latestDaily.toISOString();
       changed = true;
@@ -104,7 +154,7 @@
     const latestWeekly = getLatestSunday06(now);
     const lastWeekly = data.lastWeeklyReset ? new Date(data.lastWeeklyReset) : null;
     if (!lastWeekly || lastWeekly < latestWeekly) {
-      data.weekly.forEach(q => q.done = false);
+      resetQuests(data.weekly);
       data.lastWeeklyReset = latestWeekly.toISOString();
       changed = true;
     }
@@ -133,8 +183,9 @@
     let doneAll = 0;
 
     SECTIONS.forEach(section => {
-      totalAll += data[section].length;
-      doneAll += data[section].filter(q => q.done).length;
+      const counts = countQuests(data[section]);
+      totalAll += counts.total;
+      doneAll += counts.done;
     });
 
     const visible = data.dungeon.filter(d => !d.hidden);
@@ -162,22 +213,194 @@
 
   // --- Rendering ---
 
+  function renderQuestItem(quest, section, depth, data, list) {
+    const li = document.createElement('li');
+    li.className = 'quest-item' + (quest.done ? ' done' : '');
+    li.dataset.id = quest.id;
+    li.dataset.section = section;
+
+    const row = document.createElement('div');
+    row.className = 'quest-item-row';
+
+    const isReordering = reorderMode[section] && depth === 0;
+    const hasChildren = quest.children && quest.children.length > 0;
+
+    // Drag handle (top-level only, reorder mode)
+    if (isReordering) {
+      li.classList.add('reorder-mode');
+      const handle = document.createElement('span');
+      handle.className = 'drag-handle';
+      handle.textContent = '☰';
+      row.appendChild(handle);
+
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const idx = [...list.children].indexOf(li);
+        startDrag(li, section, idx, e.clientY);
+      });
+    }
+
+    // Toggle button
+    if (hasChildren) {
+      const toggle = document.createElement('button');
+      toggle.className = 'btn-toggle' + (quest.collapsed ? '' : ' expanded');
+      toggle.textContent = '▶';
+      toggle.addEventListener('click', () => {
+        quest.collapsed = !quest.collapsed;
+        saveData(data);
+        render(data);
+      });
+      row.appendChild(toggle);
+    } else {
+      const spacer = document.createElement('span');
+      spacer.className = 'toggle-spacer';
+      row.appendChild(spacer);
+    }
+
+    // Checkbox
+    const cb = document.createElement('div');
+    cb.className = 'custom-checkbox' + (quest.done ? ' checked' : '');
+    cb.addEventListener('click', () => {
+      quest.done = !quest.done;
+      saveData(data);
+      render(data);
+    });
+
+    // Name
+    const name = document.createElement('span');
+    name.className = 'quest-name';
+    name.textContent = quest.name;
+
+    name.addEventListener('dblclick', () => {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'quest-edit-input';
+      input.value = quest.name;
+      input.maxLength = 50;
+
+      const commitEdit = () => {
+        const newName = input.value.trim();
+        if (newName && newName !== quest.name) {
+          quest.name = newName;
+          saveData(data);
+        }
+        render(data);
+      };
+
+      input.addEventListener('blur', commitEdit);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { input.blur(); }
+        if (e.key === 'Escape') {
+          input.removeEventListener('blur', commitEdit);
+          render(data);
+        }
+      });
+
+      name.replaceWith(input);
+      input.focus();
+      input.select();
+    });
+
+    // Add child button
+    const addChild = document.createElement('button');
+    addChild.className = 'btn-add-child';
+    addChild.textContent = '+';
+    addChild.title = '하위 항목 추가';
+    addChild.addEventListener('click', () => {
+      if (!quest.children) quest.children = [];
+      quest.collapsed = false;
+      openSubAddForms.add(quest.id);
+      saveData(data);
+      render(data);
+      // Focus the sub-add input after render
+      setTimeout(() => {
+        const thisLi = list.querySelector(`[data-id="${quest.id}"]`);
+        if (thisLi) {
+          const subInput = thisLi.querySelector('.sub-add-form input');
+          if (subInput) subInput.focus();
+        }
+      }, 0);
+    });
+
+    // Delete button
+    const del = document.createElement('button');
+    del.className = 'btn-delete';
+    del.textContent = '\u2212';
+    del.title = '삭제';
+    del.addEventListener('click', () => {
+      removeQuestById(data[section], quest.id);
+      saveData(data);
+      render(data);
+    });
+
+    row.append(cb, name, addChild, del);
+    li.appendChild(row);
+
+    // Children list (if expanded or sub-add form is open)
+    const showChildren = !quest.collapsed && (hasChildren || openSubAddForms.has(quest.id));
+    if (showChildren) {
+      const childUl = document.createElement('ul');
+      childUl.className = 'quest-children';
+
+      quest.children.forEach(child => {
+        renderQuestItem(child, section, depth + 1, data, childUl);
+      });
+
+      // Sub-add form
+      const addLi = document.createElement('li');
+      addLi.className = 'sub-add-form';
+      const subInput = document.createElement('input');
+      subInput.type = 'text';
+      subInput.placeholder = '하위 항목 추가...';
+      subInput.maxLength = 50;
+
+      const subBtn = document.createElement('button');
+      subBtn.textContent = '+';
+
+      const addSubQuest = () => {
+        const val = subInput.value.trim();
+        if (!val) return;
+        quest.children.push({ id: generateId(), name: val, done: false, children: [], collapsed: false });
+        saveData(data);
+        render(data);
+        // Re-focus the sub-add input
+        setTimeout(() => {
+          const thisLi = list.querySelector(`[data-id="${quest.id}"]`);
+          if (thisLi) {
+            const newInput = thisLi.querySelector('.sub-add-form input');
+            if (newInput) newInput.focus();
+          }
+        }, 0);
+      };
+
+      subBtn.addEventListener('click', addSubQuest);
+      subInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') addSubQuest();
+      });
+
+      addLi.append(subInput, subBtn);
+      childUl.appendChild(addLi);
+      li.appendChild(childUl);
+    }
+
+    list.appendChild(li);
+  }
+
   function render(data) {
     SECTIONS.forEach(section => {
       const list = document.getElementById(`${section}-list`);
       list.innerHTML = '';
 
       const quests = data[section];
-      const total = quests.length;
-      const doneCount = quests.filter(q => q.done).length;
+      const counts = countQuests(quests);
 
       const countEl = document.getElementById(`${section}-count`);
-      countEl.textContent = total > 0 ? `${doneCount}/${total}` : '';
+      countEl.textContent = counts.total > 0 ? `${counts.done}/${counts.total}` : '';
 
       const progressWrap = document.getElementById(`${section}-progress`);
-      updateProgressBar(progressWrap, doneCount, total);
+      updateProgressBar(progressWrap, counts.done, counts.total);
 
-      if (total === 0) {
+      if (quests.length === 0) {
         const li = document.createElement('li');
         li.className = 'empty-msg';
         const icon = document.createElement('span');
@@ -189,81 +412,8 @@
         return;
       }
 
-      const isReordering = reorderMode[section];
-
-      quests.forEach((quest, idx) => {
-        const li = document.createElement('li');
-        li.className = 'quest-item' + (quest.done ? ' done' : '');
-        li.dataset.index = idx;
-        li.dataset.section = section;
-
-        if (isReordering) {
-          li.classList.add('reorder-mode');
-          const handle = document.createElement('span');
-          handle.className = 'drag-handle';
-          handle.textContent = '☰';
-          li.appendChild(handle);
-
-          handle.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            startDrag(li, section, idx, e.clientY);
-          });
-        }
-
-        const cb = document.createElement('div');
-        cb.className = 'custom-checkbox' + (quest.done ? ' checked' : '');
-        cb.addEventListener('click', () => {
-          quest.done = !quest.done;
-          saveData(data);
-          render(data);
-        });
-
-        const name = document.createElement('span');
-        name.className = 'quest-name';
-        name.textContent = quest.name;
-
-        name.addEventListener('dblclick', () => {
-          const input = document.createElement('input');
-          input.type = 'text';
-          input.className = 'quest-edit-input';
-          input.value = quest.name;
-          input.maxLength = 50;
-
-          const commitEdit = () => {
-            const newName = input.value.trim();
-            if (newName && newName !== quest.name) {
-              quest.name = newName;
-              saveData(data);
-            }
-            render(data);
-          };
-
-          input.addEventListener('blur', commitEdit);
-          input.addEventListener('keydown', e => {
-            if (e.key === 'Enter') { input.blur(); }
-            if (e.key === 'Escape') {
-              input.removeEventListener('blur', commitEdit);
-              render(data);
-            }
-          });
-
-          name.replaceWith(input);
-          input.focus();
-          input.select();
-        });
-
-        const del = document.createElement('button');
-        del.className = 'btn-delete';
-        del.textContent = '\u2212';
-        del.title = '삭제';
-        del.addEventListener('click', () => {
-          data[section] = data[section].filter(q => q.id !== quest.id);
-          saveData(data);
-          render(data);
-        });
-
-        li.append(cb, name, del);
-        list.appendChild(li);
+      quests.forEach(quest => {
+        renderQuestItem(quest, section, 0, data, list);
       });
     });
 
@@ -304,6 +454,9 @@
       const li = document.createElement('li');
       li.className = 'quest-item' + (dungeon.done ? ' done' : '');
 
+      const row = document.createElement('div');
+      row.className = 'quest-item-row';
+
       const cb = document.createElement('div');
       cb.className = 'custom-checkbox' + (dungeon.done ? ' checked' : '');
       cb.addEventListener('click', () => {
@@ -329,7 +482,8 @@
         updateOverallProgress(data);
       });
 
-      li.append(cb, name, del);
+      row.append(cb, name, del);
+      li.appendChild(row);
       list.appendChild(li);
     });
   }
@@ -346,7 +500,7 @@
     function onMouseMove(e) {
       if (!dragState.active) return;
       const list = li.closest('.quest-list');
-      const items = [...list.querySelectorAll('.quest-item')];
+      const items = [...list.querySelectorAll(':scope > .quest-item')];
       items.forEach(item => item.classList.remove('drag-over'));
 
       for (const item of items) {
@@ -367,14 +521,14 @@
       if (!dragState.active) return;
 
       const list = li.closest('.quest-list');
-      const items = [...list.querySelectorAll('.quest-item')];
+      const items = [...list.querySelectorAll(':scope > .quest-item')];
       const target = items.find(item => item.classList.contains('drag-over'));
 
       items.forEach(item => item.classList.remove('drag-over'));
       dragState.el.classList.remove('dragging');
 
       if (target) {
-        const toIndex = parseInt(target.dataset.index);
+        const toIndex = items.indexOf(target);
         if (toIndex !== dragState.fromIndex) {
           const arr = data[dragState.section];
           const [moved] = arr.splice(dragState.fromIndex, 1);
@@ -421,7 +575,7 @@
     const name = input.value.trim();
     if (!name) return;
 
-    data[section].push({ id: generateId(), name, done: false });
+    data[section].push({ id: generateId(), name, done: false, children: [], collapsed: false });
     saveData(data);
     render(data);
     input.value = '';
