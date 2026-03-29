@@ -36,11 +36,9 @@
     if (!data.event) data.event = [];
     if (!data.lastDailyReset) data.lastDailyReset = null;
     if (!data.lastWeeklyReset) data.lastWeeklyReset = null;
-    // Dungeon migration
     if (!data.dungeon) {
       data.dungeon = getDefaultDungeons();
     }
-    if (data.showDungeon === undefined) data.showDungeon = false;
     return data;
   }
 
@@ -55,7 +53,6 @@
       weekly: [],
       event: [],
       dungeon: getDefaultDungeons(),
-      showDungeon: false,
       lastDailyReset: null,
       lastWeeklyReset: null,
     };
@@ -99,7 +96,6 @@
     const lastDaily = data.lastDailyReset ? new Date(data.lastDailyReset) : null;
     if (!lastDaily || lastDaily < latestDaily) {
       data.daily.forEach(q => q.done = false);
-      // Dungeon daily reset: clear done only, keep hidden
       data.dungeon.forEach(d => d.done = false);
       data.lastDailyReset = latestDaily.toISOString();
       changed = true;
@@ -116,6 +112,54 @@
     return changed;
   }
 
+  // --- Progress helpers ---
+
+  function updateProgressBar(progressWrap, doneCount, total) {
+    const fill = progressWrap.querySelector('.progress-bar-fill');
+    if (total > 0) {
+      progressWrap.style.display = 'block';
+      const pct = (doneCount / total) * 100;
+      fill.style.width = `${pct}%`;
+      fill.classList.toggle('complete', doneCount === total && total > 0);
+    } else {
+      progressWrap.style.display = 'none';
+      fill.style.width = '0';
+      fill.classList.remove('complete');
+    }
+  }
+
+  function updateOverallProgress(data) {
+    let totalAll = 0;
+    let doneAll = 0;
+
+    SECTIONS.forEach(section => {
+      totalAll += data[section].length;
+      doneAll += data[section].filter(q => q.done).length;
+    });
+
+    const visible = data.dungeon.filter(d => !d.hidden);
+    totalAll += visible.length;
+    doneAll += visible.filter(d => d.done).length;
+
+    const progressBar = document.getElementById('overallProgress');
+    const label = document.getElementById('overallLabel');
+    const fill = progressBar.querySelector('.overall-progress-fill');
+
+    if (totalAll > 0) {
+      const pct = Math.round((doneAll / totalAll) * 100);
+      fill.style.width = `${pct}%`;
+      label.textContent = `${pct}%`;
+      const isComplete = doneAll === totalAll;
+      fill.classList.toggle('complete', isComplete);
+      label.classList.toggle('complete', isComplete);
+    } else {
+      fill.style.width = '0';
+      label.textContent = '';
+      fill.classList.remove('complete');
+      label.classList.remove('complete');
+    }
+  }
+
   // --- Rendering ---
 
   function render(data) {
@@ -128,21 +172,19 @@
       const doneCount = quests.filter(q => q.done).length;
 
       const countEl = document.getElementById(`${section}-count`);
+      countEl.textContent = total > 0 ? `${doneCount}/${total}` : '';
+
       const progressWrap = document.getElementById(`${section}-progress`);
-      if (total > 0) {
-        countEl.textContent = `${doneCount}/${total}`;
-        progressWrap.style.display = 'block';
-        const fill = progressWrap.querySelector('.progress-bar-fill');
-        fill.style.width = `${(doneCount / total) * 100}%`;
-      } else {
-        countEl.textContent = '';
-        progressWrap.style.display = 'none';
-      }
+      updateProgressBar(progressWrap, doneCount, total);
 
       if (total === 0) {
         const li = document.createElement('li');
         li.className = 'empty-msg';
-        li.textContent = section === 'todo' ? '할 일이 없습니다' : '퀘스트가 없습니다';
+        const icon = document.createElement('span');
+        icon.className = 'empty-icon';
+        icon.textContent = '📭';
+        li.appendChild(icon);
+        li.appendChild(document.createTextNode(section === 'todo' ? '할 일이 없습니다' : '퀘스트가 없습니다'));
         list.appendChild(li);
         return;
       }
@@ -168,12 +210,10 @@
           });
         }
 
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.className = 'quest-checkbox';
-        cb.checked = quest.done;
-        cb.addEventListener('change', () => {
-          quest.done = cb.checked;
+        const cb = document.createElement('div');
+        cb.className = 'custom-checkbox' + (quest.done ? ' checked' : '');
+        cb.addEventListener('click', () => {
+          quest.done = !quest.done;
           saveData(data);
           render(data);
         });
@@ -229,22 +269,12 @@
 
     renderDungeon(data);
     updateResetInfo(data);
+    updateOverallProgress(data);
   }
 
   // --- Dungeon Rendering ---
 
   function renderDungeon(data) {
-    const panel = document.getElementById('dungeonPanel');
-    const toggleBtn = document.getElementById('dungeonToggle');
-
-    if (data.showDungeon) {
-      panel.classList.add('visible');
-      toggleBtn.classList.add('active');
-    } else {
-      panel.classList.remove('visible');
-      toggleBtn.classList.remove('active');
-    }
-
     const list = document.getElementById('dungeon-list');
     list.innerHTML = '';
 
@@ -253,45 +283,42 @@
     const doneCount = visible.filter(d => d.done).length;
 
     const countEl = document.getElementById('dungeon-count');
+    countEl.textContent = total > 0 ? `${doneCount}/${total}` : '';
+
     const progressWrap = document.getElementById('dungeon-progress');
-    if (total > 0) {
-      countEl.textContent = `${doneCount}/${total}`;
-      progressWrap.style.display = 'block';
-      const fill = progressWrap.querySelector('.progress-bar-fill');
-      fill.style.width = `${(doneCount / total) * 100}%`;
-    } else {
-      countEl.textContent = '';
-      progressWrap.style.display = 'none';
-    }
+    updateProgressBar(progressWrap, doneCount, total);
 
     if (total === 0) {
       const li = document.createElement('li');
       li.className = 'empty-msg';
-      li.textContent = '모든 던전이 제거되었습니다';
+      const icon = document.createElement('span');
+      icon.className = 'empty-icon';
+      icon.textContent = '📭';
+      li.appendChild(icon);
+      li.appendChild(document.createTextNode('모든 던전이 제거되었습니다'));
       list.appendChild(li);
       return;
     }
 
     visible.forEach(dungeon => {
       const li = document.createElement('li');
-      li.className = 'dungeon-item' + (dungeon.done ? ' done' : '');
+      li.className = 'quest-item' + (dungeon.done ? ' done' : '');
 
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.className = 'quest-checkbox';
-      cb.checked = dungeon.done;
-      cb.addEventListener('change', () => {
-        dungeon.done = cb.checked;
+      const cb = document.createElement('div');
+      cb.className = 'custom-checkbox' + (dungeon.done ? ' checked' : '');
+      cb.addEventListener('click', () => {
+        dungeon.done = !dungeon.done;
         saveData(data);
         renderDungeon(data);
+        updateOverallProgress(data);
       });
 
       const name = document.createElement('span');
-      name.className = 'dungeon-name';
+      name.className = 'quest-name';
       name.textContent = dungeon.name;
 
       const del = document.createElement('button');
-      del.className = 'btn-dungeon-delete';
+      del.className = 'btn-delete';
       del.textContent = '✕';
       del.title = '제거';
       del.addEventListener('click', () => {
@@ -299,6 +326,7 @@
         dungeon.done = false;
         saveData(data);
         renderDungeon(data);
+        updateOverallProgress(data);
       });
 
       li.append(cb, name, del);
@@ -317,7 +345,6 @@
 
     function onMouseMove(e) {
       if (!dragState.active) return;
-      // 같은 섹션의 li 목록에서 마우스 위치에 해당하는 대상 찾기
       const list = li.closest('.quest-list');
       const items = [...list.querySelectorAll('.quest-item')];
       items.forEach(item => item.classList.remove('drag-over'));
@@ -423,18 +450,12 @@
       });
     });
 
-    // Dungeon toggle
-    document.getElementById('dungeonToggle').addEventListener('click', () => {
-      data.showDungeon = !data.showDungeon;
-      saveData(data);
-      renderDungeon(data);
-    });
-
     // Dungeon reset
     document.getElementById('dungeonReset').addEventListener('click', () => {
       data.dungeon = getDefaultDungeons();
       saveData(data);
       renderDungeon(data);
+      updateOverallProgress(data);
     });
   }
 
