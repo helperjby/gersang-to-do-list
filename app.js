@@ -328,6 +328,11 @@
     del.textContent = '\u2212';
     del.title = '삭제';
     del.addEventListener('click', () => {
+      const hasKids = quest.children && quest.children.length > 0;
+      const msg = hasKids
+        ? `"${quest.name}" 및 하위 항목 ${quest.children.length}개를 삭제하시겠습니까?`
+        : `"${quest.name}"을(를) 삭제하시겠습니까?`;
+      if (!confirm(msg)) return;
       removeQuestById(data[section], quest.id);
       saveData(data);
       render(data);
@@ -475,6 +480,7 @@
       del.textContent = '✕';
       del.title = '제거';
       del.addEventListener('click', () => {
+        if (!confirm(`"${dungeon.name}"을(를) 제거하시겠습니까?`)) return;
         dungeon.hidden = true;
         dungeon.done = false;
         saveData(data);
