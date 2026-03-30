@@ -599,7 +599,7 @@
 
   // --- Events ---
 
-  function addQuest(section, data) {
+  function addQuest(section) {
     const input = document.getElementById(`${section}-input`);
     const name = input.value.trim();
     if (!name) return;
@@ -611,16 +611,16 @@
     input.focus();
   }
 
-  function bindEvents(data) {
+  function bindEvents() {
     document.querySelectorAll('.btn-add').forEach(btn => {
       const section = btn.dataset.section;
-      btn.addEventListener('click', () => addQuest(section, data));
+      btn.addEventListener('click', () => addQuest(section));
     });
 
     document.querySelectorAll('.add-form input').forEach(input => {
       const section = input.id.replace('-input', '');
       input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') addQuest(section, data);
+        if (e.key === 'Enter') addQuest(section);
       });
     });
 
@@ -816,7 +816,7 @@
       saveData(data);
     }
     render(data);
-    bindEvents(data);
+    bindEvents();
     bindSyncEvents();
   }
 
