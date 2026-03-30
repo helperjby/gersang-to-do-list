@@ -5,13 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>거상 To-Do List</title>
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="style.css?v=7">
+  <link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
   <header>
     <div class="header-inner">
       <h1>거상 To-Do List</h1>
       <p class="reset-info" id="resetInfo"></p>
+      <button class="btn-sync" id="btnSync" title="동기화">🔄 동기화</button>
     </div>
     <div class="overall-progress-wrap">
       <div class="overall-progress-bar" id="overallProgress">
@@ -98,11 +99,46 @@
     </aside>
   </div>
 
+  <!-- Sync Modal -->
+  <div class="sync-overlay" id="syncOverlay">
+    <div class="sync-modal">
+      <div class="sync-header">
+        <h3>🔄 데이터 동기화</h3>
+        <button class="sync-close" id="syncClose">✕</button>
+      </div>
+      <div class="sync-section">
+        <h4>📤 업로드 (코드 생성)</h4>
+        <p class="sync-desc">현재 데이터를 서버에 업로드하고 동기화 코드를 생성합니다.</p>
+        <button class="btn-sync-action btn-sync-primary" id="syncUpload">코드 생성</button>
+        <div class="sync-code-display" id="syncCodeDisplay" style="display:none;">
+          <span class="sync-code-text" id="syncCodeText"></span>
+          <button class="btn-sync-copy" id="syncCopy" title="복사">📋</button>
+        </div>
+      </div>
+      <div class="sync-divider"></div>
+      <div class="sync-section">
+        <h4>📥 다운로드 (코드 입력)</h4>
+        <p class="sync-desc">다른 기기에서 생성한 코드를 입력하여 데이터를 불러옵니다.</p>
+        <div class="sync-input-row">
+          <input type="text" id="syncCodeInput" placeholder="동기화 코드 입력..." maxlength="8" autocomplete="off" spellcheck="false">
+          <button class="btn-sync-action btn-sync-primary" id="syncDownload">불러오기</button>
+        </div>
+      </div>
+      <div class="sync-status" id="syncStatus"></div>
+      <div class="sync-info">
+        <p>※ 동기화 코드는 7일간 유효합니다.</p>
+        <p>※ 불러오기 시 현재 데이터가 덮어씌워집니다.</p>
+      </div>
+    </div>
+  </div>
+
   <footer>
     <p>세종서버 강미루</p>
     <p class="footer-credit">Made with <a href="https://claude.ai/code" target="_blank" rel="noopener">Claude Code</a></p>
   </footer>
 
-  <script src="app.js?v=7"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 
 ## 프로젝트 개요
 거상(온라인 게임) 플레이어를 위한 일일/주간 퀘스트 및 던전 공고 관리 To-Do List 웹 앱.
-순수 HTML/CSS/JS(바닐라)로 구현, 외부 라이브러리 없음. Pretendard 웹폰트 CDN 사용.
+순수 HTML/CSS/JS(바닐라)로 구현. Pretendard 웹폰트 CDN + Firebase SDK CDN 사용.
 
 - **배포 URL**: https://helperjby.github.io/gersang-to-do-list/
 - **저장소**: https://github.com/helperjby/gersang-to-do-list
@@ -63,7 +63,15 @@
 - 퍼센트(%) 텍스트 라벨
 - 100% 달성 시 초록색 + glow 효과
 
-### 5. 자동 리셋
+### 5. 데이터 동기화 (Firebase)
+- **동기화 코드**: 6자리 영숫자 코드 생성 → 다른 기기에서 코드 입력하여 데이터 불러오기
+- **업로드**: 현재 데이터를 Firebase Realtime Database에 저장, 7일간 유효
+- **다운로드**: 코드 입력 → 서버에서 데이터 조회 → 로컬 데이터 덮어쓰기 (confirm 확인)
+- **충돌 처리**: 명시적 업로드/다운로드 방식 (덮어쓰기)
+- **오프라인**: Firebase 미설정 시에도 앱 정상 동작 (동기화 기능만 비활성)
+- **코드 복사**: 클립보드 복사 버튼 제공
+
+### 6. 자동 리셋
 - **일일 리셋**: 매일 06:00 기준, `daily` 퀘스트 + `dungeon` 체크 초기화
 - **주간 리셋**: 매주 일요일 06:00 기준, `weekly` 퀘스트 초기화
 - 헤더에 마지막 리셋 시각 표시
@@ -150,7 +158,8 @@
 | `8d7e388` | 완료 체크 시 자동 정렬 제거, README.md 작성 |
 | `616e854` | handoff.md 최신 상태로 업데이트 |
 | `d0575fa` | UI 전면 개편 - 게임 UI 강화 스타일 |
-| (NEW) | 하위 뎁스(Sub-Item) 추가 + 삭제 확인 알럿 |
+| `fb858b1` | 하위 뎁스(Sub-Item) 추가 + 삭제 확인 알럿 |
+| (NEW) | Firebase 동기화 코드 기능 추가 |
 
 ---
 
@@ -195,7 +204,9 @@ http://localhost:3000
 
 ## 알려진 사항 / 참고
 - PC 전용 레이아웃 (모바일 뷰 미고려)
-- 외부 라이브러리 없음 (Pretendard 폰트 CDN만 사용)
+- 외부 라이브러리: Pretendard 폰트 CDN + Firebase SDK CDN (동기화용)
 - 다크 테마 고정, 게임 UI 강화 스타일 (카테고리별 색상 구분)
 - GitHub Pages 배포 시 CDN 캐시로 반영까지 1~2분 소요될 수 있음
-- CSS/JS 파일 변경 시 index.html의 쿼리 스트링 버전(`?v=N`)을 올려야 캐시 갱신됨 (현재 v7)
+- CSS/JS 파일 변경 시 index.html의 쿼리 스트링 버전(`?v=N`)을 올려야 캐시 갱신됨 (현재 v8)
+- Firebase 설정: `app.js` 상단의 `FIREBASE_CONFIG` 객체에 Firebase 프로젝트 설정값 입력 필요
+- Firebase 클라이언트 API 키는 공개 식별자 (비밀 아님), 보안은 Security Rules로 제어

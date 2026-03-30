@@ -9,6 +9,29 @@
     '해적동굴2층(200렙 이하)', '유명계', '륭산', '샤오링의후원', '챠우신전',
   ];
 
+  // --- Firebase ---
+  // Firebase 클라이언트 API 키는 공개 식별자이며 비밀이 아닙니다. 보안은 Firebase Security Rules로 제어됩니다.
+  // 아래 값을 Firebase 프로젝트 설정값으로 교체하세요.
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDKtfpk0KgupPiCLPdLfZPC42ABsBjfQo0",
+    authDomain: "gersang-to-do.firebaseapp.com",
+    databaseURL: "https://gersang-to-do-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "gersang-to-do",
+    storageBucket: "gersang-to-do.firebasestorage.app",
+    appId: "1:624043848118:web:d13fef4d2426dfe1581117",
+  };
+
+  let db = null;
+  const isFirebaseConfigured = FIREBASE_CONFIG.databaseURL && FIREBASE_CONFIG.databaseURL !== "YOUR_DATABASE_URL";
+  if (isFirebaseConfigured && typeof firebase !== 'undefined') {
+    try {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.database();
+    } catch (e) {
+      console.warn('Firebase 초기화 실패:', e.message);
+    }
+  }
+
   // --- State ---
   let reorderMode = {};
   let openSubAddForms = new Set(); // Track quest IDs with open sub-add forms
@@ -619,6 +642,170 @@
     });
   }
 
+  // --- Sync ---
+
+  function generateSyncCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 혼동 방지: 0/O, 1/I 제외
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return code;
+  }
+
+  function setSyncStatus(msg, type) {
+    const el = document.getElementById('syncStatus');
+    el.textContent = msg;
+    el.className = 'sync-status' + (type ? ` sync-status-${type}` : '');
+    if (type === 'success' || type === 'error') {
+      setTimeout(() => { el.textContent = ''; el.className = 'sync-status'; }, 5000);
+    }
+  }
+
+  async function uploadData() {
+    if (!db) {
+      setSyncStatus('Firebase가 설정되지 않았습니다.', 'error');
+      return;
+    }
+
+    const uploadBtn = document.getElementById('syncUpload');
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = '업로드 중...';
+    setSyncStatus('', '');
+
+    try {
+      const code = generateSyncCode();
+      const currentData = loadData();
+      // 리셋 타임스탬프와 collapsed 상태는 제외 (디바이스별 상태)
+      const syncPayload = {
+        data: JSON.stringify(currentData),
+        timestamp: Date.now(),
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      };
+
+      await Promise.race([
+        db.ref(`sync/${code}`).set(syncPayload),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
+      ]);
+
+      const display = document.getElementById('syncCodeDisplay');
+      const codeText = document.getElementById('syncCodeText');
+      display.style.display = 'flex';
+      codeText.textContent = code;
+      setSyncStatus('코드가 생성되었습니다!', 'success');
+    } catch (e) {
+      console.error('Upload error:', e);
+      setSyncStatus('업로드에 실패했습니다. 인터넷 연결을 확인해주세요.', 'error');
+    } finally {
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = '코드 생성';
+    }
+  }
+
+  async function downloadData() {
+    if (!db) {
+      setSyncStatus('Firebase가 설정되지 않았습니다.', 'error');
+      return;
+    }
+
+    const input = document.getElementById('syncCodeInput');
+    const code = input.value.trim().toUpperCase();
+    if (!code) {
+      setSyncStatus('동기화 코드를 입력해주세요.', 'error');
+      return;
+    }
+
+    const downloadBtn = document.getElementById('syncDownload');
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = '불러오는 중...';
+    setSyncStatus('', '');
+
+    try {
+      const snapshot = await Promise.race([
+        db.ref(`sync/${code}`).once('value'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
+      ]);
+      const val = snapshot.val();
+
+      if (!val) {
+        setSyncStatus('유효하지 않은 코드입니다.', 'error');
+        return;
+      }
+
+      if (val.expiresAt && val.expiresAt < Date.now()) {
+        setSyncStatus('만료된 코드입니다. 다시 업로드해주세요.', 'error');
+        return;
+      }
+
+      const remoteData = JSON.parse(val.data);
+      const uploadTime = new Date(val.timestamp);
+      const timeStr = `${uploadTime.getFullYear()}-${String(uploadTime.getMonth() + 1).padStart(2, '0')}-${String(uploadTime.getDate()).padStart(2, '0')} ${String(uploadTime.getHours()).padStart(2, '0')}:${String(uploadTime.getMinutes()).padStart(2, '0')}`;
+
+      if (!confirm(`마지막 업로드: ${timeStr}\n\n현재 데이터를 덮어쓰시겠습니까?`)) {
+        setSyncStatus('취소되었습니다.', '');
+        return;
+      }
+
+      const migrated = migrateData(remoteData);
+      saveData(migrated);
+      data = migrated;
+      if (checkAndReset(data)) saveData(data);
+      render(data);
+
+      input.value = '';
+      setSyncStatus('데이터를 불러왔습니다!', 'success');
+    } catch (e) {
+      console.error('Download error:', e);
+      setSyncStatus('불러오기에 실패했습니다. 인터넷 연결을 확인해주세요.', 'error');
+    } finally {
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = '불러오기';
+    }
+  }
+
+  function bindSyncEvents() {
+    const overlay = document.getElementById('syncOverlay');
+    const btnSync = document.getElementById('btnSync');
+    const btnClose = document.getElementById('syncClose');
+
+    btnSync.addEventListener('click', () => {
+      overlay.classList.add('active');
+      // Reset state
+      document.getElementById('syncCodeDisplay').style.display = 'none';
+      document.getElementById('syncCodeInput').value = '';
+      document.getElementById('syncStatus').textContent = '';
+    });
+
+    btnClose.addEventListener('click', () => overlay.classList.remove('active'));
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.classList.remove('active');
+    });
+
+    document.getElementById('syncUpload').addEventListener('click', uploadData);
+    document.getElementById('syncDownload').addEventListener('click', downloadData);
+
+    // Enter key on input
+    document.getElementById('syncCodeInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') downloadData();
+    });
+
+    // Copy code
+    document.getElementById('syncCopy').addEventListener('click', () => {
+      const code = document.getElementById('syncCodeText').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        setSyncStatus('코드가 복사되었습니다!', 'success');
+      }).catch(() => {
+        // Fallback: select text
+        const range = document.createRange();
+        range.selectNodeContents(document.getElementById('syncCodeText'));
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        setSyncStatus('코드를 선택했습니다. Ctrl+C로 복사해주세요.', '');
+      });
+    });
+  }
+
   // --- Init ---
 
   let data;
@@ -630,6 +817,7 @@
     }
     render(data);
     bindEvents(data);
+    bindSyncEvents();
   }
 
   init();
