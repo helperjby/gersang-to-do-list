@@ -4,9 +4,10 @@
 거상(온라인 게임) 플레이어를 위한 일일/주간 퀘스트 및 던전 공고 관리 To-Do List 웹 앱.
 순수 HTML/CSS/JS(바닐라)로 구현. Pretendard 웹폰트 CDN + Firebase SDK CDN 사용.
 
-- **배포 URL**: https://helperjby.github.io/gersang-to-do-list/
+- **배포 URL (Netlify)**: https://gersang-todo.netlify.app
+- **배포 URL (GitHub Pages)**: https://helperjby.github.io/gersang-to-do-list/
 - **저장소**: https://github.com/helperjby/gersang-to-do-list
-- **배포 방식**: GitHub Pages (main 브랜치, / 경로)
+- **배포 방식**: Netlify (main 브랜치 자동 배포) + GitHub Pages (병행)
 
 ---
 
@@ -14,8 +15,8 @@
 
 ```
 ├── index.html    # 메인 HTML (2컬럼 레이아웃, 헤더, 전체 진행률, 퀘스트 카드 4개, 던전 카드, footer)
-├── app.js        # 전체 비즈니스 로직 (IIFE, ~500줄)
-├── style.css     # CSS Custom Properties 기반 다크 테마 스타일링 (~680줄)
+├── app.js        # 전체 비즈니스 로직 + Firebase 동기화 (IIFE, ~820줄)
+├── style.css     # CSS Custom Properties 기반 다크 테마 스타일링 (~900줄)
 ├── README.md     # 프로젝트 소개 (GitHub 저장소 페이지)
 ├── handoff.md    # 개발자 핸드오프 문서
 ├── docs/
@@ -159,7 +160,8 @@
 | `616e854` | handoff.md 최신 상태로 업데이트 |
 | `d0575fa` | UI 전면 개편 - 게임 UI 강화 스타일 |
 | `fb858b1` | 하위 뎁스(Sub-Item) 추가 + 삭제 확인 알럿 |
-| (NEW) | Firebase 동기화 코드 기능 추가 |
+| `75d1d42` | Firebase 동기화 코드 기능 추가 |
+| (NEW) | Netlify 배포 전환 (gersang-todo.netlify.app) |
 
 ---
 
@@ -202,11 +204,35 @@ http://localhost:3000
 
 ---
 
+## 배포 구성
+
+### Netlify (주 배포)
+- **URL**: https://gersang-todo.netlify.app
+- **플랜**: 무료 (Starter)
+- **연결**: GitHub `helperjby/gersang-to-do-list` 저장소 → `main` 브랜치
+- **빌드 설정**: Build command 없음, Publish directory `.` (정적 사이트)
+- **자동 배포**: `main` 브랜치 push 시 자동 배포
+- **사이트 이름 변경**: Netlify Dashboard → Domain management → Edit site name
+
+### GitHub Pages (병행)
+- **URL**: https://helperjby.github.io/gersang-to-do-list/
+- **설정**: main 브랜치, / 경로
+
+### Firebase (동기화 백엔드)
+- **프로젝트**: `gersang-to-do` (Firebase Console)
+- **서비스**: Realtime Database (asia-southeast1)
+- **Database URL**: `https://gersang-to-do-default-rtdb.asia-southeast1.firebasedatabase.app`
+- **플랜**: Spark (무료) — 1GB 저장, 10GB/월 전송
+- **보안 규칙**: test mode (운영 시 validate 규칙 적용 권장)
+- **API 키**: 클라이언트 공개 식별자 (비밀 아님), 보안은 Security Rules로 제어
+- **데이터 경로**: `/sync/{코드}` — `{ data, timestamp, expiresAt }` 구조
+- **만료**: 7일 (클라이언트에서 체크, 서버 자동 삭제는 미구현)
+
+---
+
 ## 알려진 사항 / 참고
 - PC 전용 레이아웃 (모바일 뷰 미고려)
 - 외부 라이브러리: Pretendard 폰트 CDN + Firebase SDK CDN (동기화용)
 - 다크 테마 고정, 게임 UI 강화 스타일 (카테고리별 색상 구분)
-- GitHub Pages 배포 시 CDN 캐시로 반영까지 1~2분 소요될 수 있음
 - CSS/JS 파일 변경 시 index.html의 쿼리 스트링 버전(`?v=N`)을 올려야 캐시 갱신됨 (현재 v8)
 - Firebase 설정: `app.js` 상단의 `FIREBASE_CONFIG` 객체에 Firebase 프로젝트 설정값 입력 필요
-- Firebase 클라이언트 API 키는 공개 식별자 (비밀 아님), 보안은 Security Rules로 제어
